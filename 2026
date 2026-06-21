@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaggery Buyer CRM</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f8;
+padding:15px;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.card{
+background:white;
+padding:15px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,.1);
+margin-bottom:15px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+}
+
+input,select,textarea{
+width:100%;
+padding:10px;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+textarea{
+height:80px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+margin-top:8px;
+}
+
+.save{
+background:#28a745;
+color:white;
+}
+
+.export{
+background:#007bff;
+color:white;
+}
+
+.print{
+background:#ff9800;
+color:white;
+}
+
+.delete{
+background:#dc3545;
+color:white;
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:10px;
+}
+
+.stat{
+background:white;
+padding:15px;
+text-align:center;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,.1);
+}
+
+.filters{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th,td{
+padding:10px;
+border:1px solid #ddd;
+font-size:14px;
+}
+
+th{
+background:#f0f0f0;
+}
+
+@media(max-width:768px){
+
+.grid{
+grid-template-columns:1fr;
+}
+
+.stats{
+grid-template-columns:1fr 1fr;
+}
+
+table{
+font-size:12px;
+display:block;
+overflow-x:auto;
+}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>Jaggery Buyer CRM</h1>
+
+<div class="stats">
+<div class="stat">
+<h2 id="totalLeads">0</h2>
+<p>Total Leads</p>
+</div>
+
+<div class="stat">
+<h2 id="totalWholesalers">0</h2>
+<p>Wholesalers</p>
+</div>
+
+<div class="stat">
+<h2 id="totalExporters">0</h2>
+<p>Exporters</p>
+</div>
+
+<div class="stat">
+<h2 id="totalClosed">0</h2>
+<p>Closed Deals</p>
+</div>
+</div>
+
+<br>
+
+<div class="card">
+
+<h2>Add Lead</h2>
+
+<div class="grid">
+
+<input id="company" placeholder="Company Name">
+
+<input id="contact" placeholder="Contact Person">
+
+<input id="mobile" placeholder="Mobile">
+
+<input id="email" placeholder="Email">
+
+<input id="state" placeholder="State">
+
+<input id="city" placeholder="City">
+
+<select id="category">
+<option>Wholesaler</option>
+<option>Exporter</option>
+<option>Food Processor</option>
+<option>Organic Brand</option>
+<option>Ayurvedic</option>
+</select>
+
+<select id="size">
+<option>Small</option>
+<option>Medium</option>
+<option>Large</option>
+</select>
+
+<select id="status">
+<option>New Lead</option>
+<option>Contacted</option>
+<option>Interested</option>
+<option>Sample Sent</option>
+<option>Negotiation</option>
+<option>Deal Closed</option>
+<option>Rejected</option>
+</select>
+
+<input id="source" placeholder="Source (Google, Insta...)">
+
+</div>
+
+<br>
+
+<textarea id="notes" placeholder="Notes"></textarea>
+
+<button class="save" onclick="saveLead()">Save Lead</button>
+
+</div>
+
+<div class="card">
+
+<div class="filters">
+
+<input id="search" placeholder="Search..." onkeyup="renderLeads()">
+
+<select id="filterCategory" onchange="renderLeads()">
+<option value="">All Categories</option>
+<option>Wholesaler</option>
+<option>Exporter</option>
+<option>Food Processor</option>
+<option>Organic Brand</option>
+<option>Ayurvedic</option>
+</select>
+
+<button class="export" onclick="exportCSV()">Export CSV</button>
+
+<button class="print" onclick="window.print()">Print</button>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Company</th>
+<th>Contact</th>
+<th>Mobile</th>
+<th>State</th>
+<th>Category</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="leadTable"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+let leads = JSON.parse(localStorage.getItem("jaggeryLeads")) || [];
+
+function saveData(){
+localStorage.setItem("jaggeryLeads", JSON.stringify(leads));
+}
+
+function saveLead(){
+
+const lead = {
+
+id: Date.now(),
+
+company: document.getElementById("company").value,
+contact: document.getElementById("contact").value,
+mobile: document.getElementById("mobile").value,
+email: document.getElementById("email").value,
+state: document.getElementById("state").value,
+city: document.getElementById("city").value,
+category: document.getElementById("category").value,
+size: document.getElementById("size").value,
+status: document.getElementById("status").value,
+source: document.getElementById("source").value,
+notes: document.getElementById("notes").value
+
+};
+
+if(!lead.company || !lead.mobile){
+alert("Company and Mobile required");
+return;
+}
+
+leads.push(lead);
+
+saveData();
+
+document.querySelectorAll("input,textarea").forEach(el=>{
+if(el.type!=="search") el.value="";
+});
+
+renderLeads();
+
+}
+
+function renderLeads(){
+
+const tbody = document.getElementById("leadTable");
+
+const search = document.getElementById("search").value.toLowerCase();
+
+const filterCategory =
+document.getElementById("filterCategory").value;
+
+tbody.innerHTML="";
+
+let filtered = leads.filter(l=>{
+
+const matchSearch =
+Object.values(l).join(" ").toLowerCase().includes(search);
+
+const matchCategory =
+filterCategory==="" || l.category===filterCategory;
+
+return matchSearch && matchCategory;
+
+});
+
+filtered.forEach(l=>{
+
+tbody.innerHTML += `
+<tr>
+<td>${l.company}</td>
+<td>${l.contact}</td>
+<td>${l.mobile}</td>
+<td>${l.state}</td>
+<td>${l.category}</td>
+<td>${l.status}</td>
+<td>
+<button class="delete"
+onclick="deleteLead(${l.id})">
+Delete
+</button>
+</td>
+</tr>
+`;
+
+});
+
+updateStats();
+
+}
+
+function deleteLead(id){
+
+if(confirm("Delete Lead?")){
+
+leads = leads.filter(l=>l.id!==id);
+
+saveData();
+
+renderLeads();
+
+}
+
+}
+
+function updateStats(){
+
+document.getElementById("totalLeads").innerText =
+leads.length;
+
+document.getElementById("totalWholesalers").innerText =
+leads.filter(l=>l.category==="Wholesaler").length;
+
+document.getElementById("totalExporters").innerText =
+leads.filter(l=>l.category==="Exporter").length;
+
+document.getElementById("totalClosed").innerText =
+leads.filter(l=>l.status==="Deal Closed").length;
+
+}
+
+function exportCSV(){
+
+let csv =
+"Company,Contact,Mobile,Email,State,City,Category,Size,Status,Source,Notes\n";
+
+leads.forEach(l=>{
+
+csv += `"${l.company}","${l.contact}","${l.mobile}","${l.email}","${l.state}","${l.city}","${l.category}","${l.size}","${l.status}","${l.source}","${l.notes}"\n`;
+
+});
+
+const blob = new Blob([csv], {type:"text/csv"});
+
+const a = document.createElement("a");
+
+a.href = URL.createObjectURL(blob);
+
+a.download = "jaggery_buyers.csv";
+
+a.click();
+
+}
+
+renderLeads();
+
+</script>
+
+</body>
+</html>
